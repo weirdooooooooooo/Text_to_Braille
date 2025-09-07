@@ -1,0 +1,140 @@
+'''
+Mapping:
+lower case letter a~z -> 1~26
+number 0~9 -> 27~36
+special characters -> 37~46 {,;:.?!'-"(}
+space -> 47
+upper case indicator -> 48
+number indicator -> 49
+'''
+
+import pytesseract
+import cv2
+pytesseract.pytesseract.tesseract_cmd = r"D:\Program Files\Tesseract\tesseract.exe"
+
+# -------------------------------
+# Customised 6-bit encoding
+# -------------------------------
+def char_encode(c):
+    c_low = c.lower()
+    # letters
+    if 'a' <= c_low <= 'z':
+        encode = ord(c_low) - ord('a') + 1
+    # numbers
+    elif '0' <= c_low <= '9':
+        encode = 27 + int(c_low)
+    # special characters
+    elif c_low in ",;:.?!'-\"()":
+        if c_low == ')':  # convert ")" to "("
+            c_low = '('
+        special_map = {
+            ',':37, ';':38, ':':39, '.':40, '?':41,
+            '!':42, "'":43, '-':44, '"':45, '(':46
+        }
+        encode = special_map[c_low]
+    # space
+    elif c == " ":
+        encode = 47
+    else:
+        encode = None  # 47
+
+    return format(encode, "06b")
+
+
+# -------------------------------
+# OCR 模拟（用本地图片代替摄像头）
+# -------------------------------
+def get_text(img_path):
+    img = cv2.imread(img_path)
+    if img is None:
+        print("file not found")
+        return ""
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    text = pytesseract.image_to_string(gray, lang="eng")
+    return text
+
+
+# -------------------------------
+# Main loop
+# -------------------------------
+def process_text(text):
+    idx = 0
+    while idx < len(text):
+        outputs = []
+        filled = 0
+        while filled < 7:
+            ch = text[idx]
+
+            # Space → fill output with space
+            if ch == " ":
+                while filled < 7:
+                    outputs.append(format(47,'06b'))
+                    filled += 1
+                idx += 1
+                break
+
+            # Upper case → indicator + lower case
+            if ch.isupper():
+                if filled >= 5:  # not enough place
+                    outputs.append("-")
+                    filled += 1
+                    if filled < 7:
+                        outputs.append(format(47,'06b'))
+                        filled += 1
+                    break
+                outputs.append(format(48, "06b"))
+                outputs.append(char_encode(ch.lower()))
+                filled += 2
+                idx += 1
+                continue
+
+            # Number → indicator + number
+            if ch.isdigit():
+                if filled >= 5:
+                    outputs.append("-")
+                    filled += 1
+                    if filled < 7:
+                        outputs.append(format(47,'06b'))
+                        filled += 1
+                    break
+                outputs.append(format(49, "06b"))
+                outputs.append(char_encode(ch))
+                filled += 2
+                idx += 1
+                continue
+
+            # Regular character
+            outputs.append(char_encode(ch))
+            filled += 1
+            idx += 1
+
+        # Not enough output -> fill with space
+        while filled < 7:
+            outputs.append(format(47,'06b'))
+            filled += 1
+
+        # Next character is not space -> replace 7th output with "-"
+        if text[idx+1] != " ":
+            outputs[-1] = format(47,'06b')
+
+        print("\nOutput：")
+        for i, code in enumerate(outputs, 1):
+            print(f"{i}: {code}")
+
+        # 提示用户是否 reset
+        cmd = input("\nReset output and continue？(y/n): ").strip().lower()
+        if cmd != "y":
+            print("Program terminated.")
+            break
+        else:
+            print("Reset, continue to output following characters...")
+
+
+# -------------------------------
+# Start main loop
+# -------------------------------
+if __name__ == "__main__":
+    text = get_text("test_pic2.jpeg")
+    # print("OCR result：", repr(text))
+    process_text(text)
