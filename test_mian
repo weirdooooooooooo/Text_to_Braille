@@ -8,6 +8,7 @@ upper case indicator -> 48
 number indicator -> 49
 '''
 
+
 import pytesseract
 import cv2
 pytesseract.pytesseract.tesseract_cmd = r"D:\Program Files\Tesseract\tesseract.exe"
@@ -52,6 +53,7 @@ def get_text(img_path):
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     text = pytesseract.image_to_string(gray, lang="eng")
+    text = text.replace("\n", " ").replace("\r", " ")
     return text
 
 
@@ -63,12 +65,12 @@ def process_text(text):
     while idx < len(text):
         outputs = []
         filled = 0
-        while filled < 7:
+        while filled < 6:
             ch = text[idx]
 
             # Space → fill output with space
             if ch == " ":
-                while filled < 7:
+                while filled < 6:
                     outputs.append(format(47,'06b'))
                     filled += 1
                 idx += 1
@@ -79,9 +81,9 @@ def process_text(text):
                 if filled >= 5:  # not enough place
                     outputs.append("-")
                     filled += 1
-                    if filled < 7:
-                        outputs.append(format(47,'06b'))
-                        filled += 1
+                    # if filled < 7:
+                    #     outputs.append(format(47,'06b'))
+                    #     filled += 1
                     break
                 outputs.append(format(48, "06b"))
                 outputs.append(char_encode(ch.lower()))
@@ -94,9 +96,9 @@ def process_text(text):
                 if filled >= 5:
                     outputs.append("-")
                     filled += 1
-                    if filled < 7:
-                        outputs.append(format(47,'06b'))
-                        filled += 1
+                    # if filled < 7:
+                    #     outputs.append(format(47,'06b'))
+                    #     filled += 1
                     break
                 outputs.append(format(49, "06b"))
                 outputs.append(char_encode(ch))
@@ -109,20 +111,23 @@ def process_text(text):
             filled += 1
             idx += 1
 
-        # Not enough output -> fill with space
+        # Fill rest output with space
         while filled < 7:
             outputs.append(format(47,'06b'))
             filled += 1
 
         # Next character is not space -> replace 7th output with "-"
-        if text[idx+1] != " ":
-            outputs[-1] = format(47,'06b')
+        if text[idx] == " ":
+            idx += 1
+        elif outputs[-2] != format(47,'06b'):
+            outputs[-1] = char_encode("-")
+
 
         print("\nOutput：")
         for i, code in enumerate(outputs, 1):
             print(f"{i}: {code}")
 
-        # 提示用户是否 reset
+        # Reset output
         cmd = input("\nReset output and continue？(y/n): ").strip().lower()
         if cmd != "y":
             print("Program terminated.")
@@ -135,6 +140,6 @@ def process_text(text):
 # Start main loop
 # -------------------------------
 if __name__ == "__main__":
-    text = get_text("test_pic2.jpeg")
+    text = get_text("test_pic.jpg")
     # print("OCR result：", repr(text))
     process_text(text)
