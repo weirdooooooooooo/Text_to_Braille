@@ -6,7 +6,7 @@ _space_: 47
 _upper case indicator_: 48  
 _number indicator_: 49  
 
-**Upper case letter**
+**Upper case letter**  
 output indicator (48) + corresponding lower case code  
 (if only 2 output space is left, output "-", leave this letter as not visited)  
 **Number**  
