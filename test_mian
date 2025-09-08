@@ -8,14 +8,12 @@ upper case indicator -> 48
 number indicator -> 49
 '''
 
-
 import pytesseract
 import cv2
 pytesseract.pytesseract.tesseract_cmd = r"D:\Program Files\Tesseract\tesseract.exe"
 
-# -------------------------------
-# Customised 6-bit encoding
-# -------------------------------
+
+# ----- Customised 6-bit encoding -----
 def char_encode(c):
     c_low = c.lower()
     # letters
@@ -42,9 +40,7 @@ def char_encode(c):
     return format(encode, "06b")
 
 
-# -------------------------------
-# OCR 模拟（用本地图片代替摄像头）
-# -------------------------------
+# ----------- OCR on images -----------
 def get_text(img_path):
     img = cv2.imread(img_path)
     if img is None:
@@ -57,9 +53,8 @@ def get_text(img_path):
     return text
 
 
-# -------------------------------
-# Main loop
-# -------------------------------
+
+# ------------- Main loop -------------
 def process_text(text):
     idx = 0
     while idx < len(text):
@@ -81,9 +76,6 @@ def process_text(text):
                 if filled >= 5:  # not enough place
                     outputs.append("-")
                     filled += 1
-                    # if filled < 7:
-                    #     outputs.append(format(47,'06b'))
-                    #     filled += 1
                     break
                 outputs.append(format(48, "06b"))
                 outputs.append(char_encode(ch.lower()))
@@ -96,9 +88,6 @@ def process_text(text):
                 if filled >= 5:
                     outputs.append("-")
                     filled += 1
-                    # if filled < 7:
-                    #     outputs.append(format(47,'06b'))
-                    #     filled += 1
                     break
                 outputs.append(format(49, "06b"))
                 outputs.append(char_encode(ch))
@@ -136,9 +125,7 @@ def process_text(text):
             print("Reset, continue to output following characters...")
 
 
-# -------------------------------
-# Start main loop
-# -------------------------------
+# ----------- Start main loop -----------
 if __name__ == "__main__":
     text = get_text("test_pic.jpg")
     # print("OCR result：", repr(text))
